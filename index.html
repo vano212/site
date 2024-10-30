@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Календарь</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f3f3f3;
+        }
+        #calendar-container {
+            max-width: 90vw;
+            text-align: center;
+        }
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        #month {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        #days-of-week {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        #calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        .day {
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .today {
+            background-color: #ffeb3b;
+        }
+        .workday {
+            background-color: #90caf9;
+            position: relative;
+        }
+        .workday::after {
+            content: "р";
+            font-size: 12px;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            color: #ffffff;
+        }
+        .weekend {
+            background-color: #f48fb1;
+            position: relative;
+        }
+        .weekend::after {
+            content: "в";
+            font-size: 12px;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div id="calendar-container">
+        <div id="header">
+            <button onclick="changeMonth(-1)">&#9664;</button>
+            <div id="month"></div>
+            <button onclick="changeMonth(1)">&#9654;</button>
+        </div>
+        <div id="days-of-week">
+            <div>Пн</div>
+            <div>Вт</div>
+            <div>Ср</div>
+            <div>Чт</div>
+            <div>Пт</div>
+            <div>Сб</div>
+            <div>Вс</div>
+        </div>
+        <div id="calendar"></div>
+    </div>
+    <script>
+        const calendarElement = document.getElementById('calendar');
+        const monthElement = document.getElementById('month');
+        const today = new Date();
+        let currentYear = today.getFullYear();
+        let currentMonth = today.getMonth();
+        const selectedDays = JSON.parse(localStorage.getItem("calendarData")) || {};
+
+        const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+
+        function createCalendar(year, month) {
+            calendarElement.innerHTML = '';
+            monthElement.textContent = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const offset = (firstDay + 6) % 7;  // Смещение, чтобы Пн был первым
+
+            // Добавление пустых ячеек для выравнивания начала недели
+            for (let i = 0; i < offset; i++) {
+                const emptyElement = document.createElement('div');
+                calendarElement.appendChild(emptyElement);
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('day');
+                dayElement.textContent = i;
+
+                const dateKey = `${year}-${month + 1}-${i}`;
+
+                // Проверка на сегодня
+                if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayElement.classList.add('today');
+                }
+
+                // Установка сохранённых состояний
+                if (selectedDays[dateKey] === 'workday') {
+                    dayElement.classList.add('workday');
+                } else if (selectedDays[dateKey] === 'weekend') {
+                    dayElement.classList.add('weekend');
+                }
+
+                // Обработка кликов на ячейки с датами
+                dayElement.addEventListener('click', () => toggleDayState(dayElement, dateKey));
+
+                calendarElement.appendChild(dayElement);
+            }
+        }
+
+        function toggleDayState(dayElement, dateKey) {
+            if (dayElement.classList.contains('workday')) {
+                dayElement.classList.remove('workday');
+                dayElement.classList.add('weekend');
+                selectedDays[dateKey] = 'weekend';
+            } else if (dayElement.classList.contains('weekend')) {
+                dayElement.classList.remove('weekend');
+                delete selectedDays[dateKey];
+            } else {
+                dayElement.classList.add('workday');
+                selectedDays[dateKey] = 'workday';
+            }
+            saveCalendarData();
+        }
+
+        function saveCalendarData() {
+            localStorage.setItem("calendarData", JSON.stringify(selectedDays));
+        }
+
+        function changeMonth(direction) {
+            currentMonth += direction;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            } else if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            createCalendar(currentYear, currentMonth);
+        }
+
+        // Генерация календаря на текущий месяц
+        createCalendar(currentYear, currentMonth);
+    </script>
+</body>
+</html>
